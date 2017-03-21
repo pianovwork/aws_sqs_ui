@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>JS Bin</title>
+
+    <style>
+        label {
+            font-weight: bold;
+        }
+
+        input[type=text] {
+            width: 300px;
+            display: block;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.29.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+</head>
+<body>
+
+<label for="aws_access_key_id ">
+    aws_access_key_id <input type="text" id=aws_access_key_id>
+</label>
+<label for="aws_secret_access_key ">
+    aws_secret_access_key <input type="text" id=aws_secret_access_key>
+</label>
+<label for="aws_region ">
+    aws_region <input type="text" id=aws_region>
+</label>
+<a href="http://docs.aws.amazon.com/general/latest/gr/rande.html" target="_blank">see list of regions</a>
+<hr>
+
+<div>
+    <button id=get_list>get list of queue</button>
+</div>
+
+<hr>
+
+<label for="sqs_name">
+    sqs name<input type="text" id=sqs_name>
+</label>
+<label for="sqs_url">
+    sqs url<input type="text" id=sqs_url disabled value="NONE">
+</label>
+
+<div>
+    <button id=get_url>get queue url</button>
+</div>
+
+<hr>
+
+<div>
+    <button id=get_sqs_attr>get SQS attributes</button>
+</div>
+
+<hr>
+
+<div>
+    <button id=get_messages>get SQS messages</button>
+    <label for="collect_messages">
+        collect messages <input type="checkbox" checked="checked" id="collect_messages"/>
+    </label>
+    <!--<div>-->
+    <!--<input type="button" value="clean"> -->
+    <!--</div>-->
+    <div>
+        <span>messages collected <span id="msg_size">...</span></span>
+        <button id="btn_msg_clean">clean collected messages</button>
+    </div>
+</div>
+
+<div id=content style="border-top: 2px solid black">
+    result...
+</div>
+
+</body>
+
+<script type="text/javascript">
+    $(function () {
+        function getSQS() {
+            localStorage.aws_access_key_id = $("#aws_access_key_id").val();
+            localStorage.aws_secret_access_key = $("#aws_secret_access_key").val();
+            localStorage.aws_region = $("#aws_region").val();
+            localStorage.sqs_name = $("#sqs_name").val();
+            localStorage.sqs_url = $("#sqs_url").val() || "NONE";
+
+            var sqs = new AWS.SQS({
+                apiVersion: '2012-11-05',
+                region: localStorage.aws_region,
+                credentials: new AWS.Credentials(
+                    localStorage.aws_access_key_id,
+                    localStorage.aws_secret_access_key
+                )
+            });
+
+            return sqs;
+        }
+
+        function cleanContent() {
+            $("#content").empty();
+        }
+
+        function printResult(err, resp) {
+            if (err) {
+                console.log(err, err.stack); // an error occurred
+                $("#content").html($("<pre>").html(JSON.stringify(err, null, 4)));
+            } else {
+                console.log(resp);           // successful response
+                $("#content").html($("<pre>").html(JSON.stringify(resp, null, 4)));
+            }
+        }
+
+        function setupFormFields() {
+            $("#aws_access_key_id").val(localStorage.aws_access_key_id);
+            $("#aws_secret_access_key ").val(localStorage.aws_secret_access_key);
+            $("#aws_region").val(localStorage.aws_region || "us-west-1");
+            $("#sqs_url").val(localStorage.sqs_url);
+            $("#sqs_name").val(localStorage.sqs_name);
+
+            $("#btn_msg_clean").trigger("click");
+        }
+
+        function updateMessageCount(msg) {
+            $("#msg_size").html(msg.length);
+        }
+
+        function initBinding() {
+            $("#btn_msg_clean").on("click", function () {
+                messages = [];
+                updateMessageCount(messages);
+                cleanContent();
+            });
+
+            $("#get_list").on("click", function () {
+                cleanContent();
+
+                var sqs = getSQS();
+                var params = {};
+                sqs.listQueues(params, printResult);
+            });
+
+            $("#get_url").on("click", function () {
+                cleanContent();
+
+                var sqs = getSQS();
+                var params = {
+                    QueueName: localStorage.sqs_name
+                };
+
+                sqs.getQueueUrl(params, function (err, data) {
+                    printResult(err, data);
+                    if (!err) {
+                        $("#sqs_url").val(localStorage.sqs_url = data.QueueUrl);
+                    }
+                });
+                /**
+                 data = {
+                QueueUrl: "https://queue.amazonaws.com/123456789101/MyQueue"
+            }
+                 */
+            });
+            $("#get_sqs_attr").on("click", function () {
+                cleanContent();
+
+                var sqs = getSQS();
+                var params = {
+                    AttributeNames: [
+                        "All"
+                    ],
+                    QueueUrl: localStorage.sqs_url
+                };
+
+                sqs.getQueueAttributes(params, printResult);
+                /**
+                 data = {
+                Attributes: {
+                    "ApproximateNumberOfMessages": "0",
+                    "ApproximateNumberOfMessagesDelayed": "0",
+                    "ApproximateNumberOfMessagesNotVisible": "0",
+                    "CreatedTimestamp": "1442426968",
+                    "DelaySeconds": "0",
+                    "LastModifiedTimestamp": "1442426968",
+                    "MaximumMessageSize": "262144",
+                    "MessageRetentionPeriod": "345600",
+                    "QueueArn": "arn:aws:sqs:us-east-1:80398EXAMPLE:MyNewQueue",
+                    "ReceiveMessageWaitTimeSeconds": "0",
+                    "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:80398EXAMPLE:MyDeadLetterQueue\",\"maxReceiveCount\":1000}",
+                    "VisibilityTimeout": "30"
+                }
+            }
+                 */
+            });
+            $("#get_messages").on("click", function () {
+                cleanContent();
+
+                var sqs = getSQS();
+                var params = {
+                    AttributeNames: [
+                        "All"
+                    ],
+                    MaxNumberOfMessages: 10,
+                    MessageAttributeNames: [
+                        "All"
+                    ],
+                    QueueUrl: localStorage.sqs_url,
+                    VisibilityTimeout: 1,
+                    WaitTimeSeconds: 1
+                };
+
+                sqs.receiveMessage(params, function (err, data) {
+                    var msg = [];
+                    if (!err) {
+                        if ($("#collect_messages").prop("checked")) {
+                            msg = _.union(messages, data.Messages);
+                            msg = _.uniq(msg, function (a) {
+                                return a.MessageId;
+                            });
+                            messages = msg;
+                        } else {
+                            msg = data.Messages;
+                        }
+                    }
+                    printResult(err, msg);
+                    updateMessageCount(msg);
+                });
+                /**
+                 data = {
+                Messages: [
+                    {
+                        Attributes: {
+                            "ApproximateFirstReceiveTimestamp": "1442428276921",
+                            "ApproximateReceiveCount": "5",
+                            "SenderId": "AIDAIAZKMSNQ7TEXAMPLE",
+                            "SentTimestamp": "1442428276921"
+                        },
+                        Body: "My first message.",
+                        MD5OfBody: "1000f835...a35411fa",
+                        MD5OfMessageAttributes: "9424c491...26bc3ae7",
+                        MessageAttributes: {
+                            "City": {
+                                DataType: "String",
+                                StringValue: "Any City"
+                            },
+                            "PostalCode": {
+                                DataType: "String",
+                                StringValue: "ABC123"
+                            }
+                        },
+                        MessageId: "d6790f8d-d575-4f01-bc51-40122EXAMPLE",
+                        ReceiptHandle: "AQEBzbVv...fqNzFw=="
+                    }
+                ]
+            }
+                 */
+            });
+        }
+
+//        -----
+
+        var messages = [];
+
+        initBinding();
+        setupFormFields();
+    });
+</script>
+
+</html>
