@@ -28,9 +28,22 @@
     aws_secret_access_key <input type="text" id=aws_secret_access_key>
 </label>
 <label for="aws_region ">
-    aws_region <input type="text" id=aws_region>
+    aws_region
+    <br>
+    <select name="aws_region" id="aws_region">
+        <option value="us-east-1">US East (N. Virginia)</option>
+        <option value="us-east-2">US East (Ohio)</option>
+        <option value="us-west-1">US West (N. California)</option>
+        <option value="us-west-2">US West (Oregon)</option>
+        <option value="ap-northeast-2">Asia Pacific (Seoul)</option>
+        <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+        <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
+        <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+        <option value="eu-central-1">EU (Frankfurt)</option>
+        <option value="eu-west-1">EU (Ireland)</option>
+        <option value="eu-west-2">EU (London)</option>
+    </select>
 </label>
-<a href="http://docs.aws.amazon.com/general/latest/gr/rande.html" target="_blank">see list of regions</a>
 <hr>
 
 <div>
@@ -52,6 +65,10 @@
 
 <hr>
 
+<p>Before start using next commands, you need to initialize sqs url by clicking the button "get queue url".</p>
+
+<hr>
+
 <div>
     <button id=get_sqs_attr>get SQS attributes</button>
 </div>
@@ -63,9 +80,6 @@
     <label for="collect_messages">
         collect messages <input type="checkbox" checked="checked" id="collect_messages"/>
     </label>
-    <!--<div>-->
-    <!--<input type="button" value="clean"> -->
-    <!--</div>-->
     <div>
         <span>messages collected <span id="msg_size">...</span></span>
         <button id="btn_msg_clean">clean collected messages</button>
