@@ -5,88 +5,110 @@
     <meta name="viewport" content="width=device-width">
     <title>JS Bin</title>
 
-    <style>
-        label {
-            font-weight: bold;
-        }
+    <script src="https://code.jquery.com/jquery.min.js"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet"
+          type="text/css"/>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 
-        input[type=text] {
-            width: 300px;
-            display: block;
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.29.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 </head>
 <body>
 
-<label for="aws_access_key_id ">
-    aws_access_key_id <input type="text" id=aws_access_key_id>
-</label>
-<label for="aws_secret_access_key ">
-    aws_secret_access_key <input type="text" id=aws_secret_access_key>
-</label>
-<label for="aws_region ">
-    aws_region
-    <br>
-    <select name="aws_region" id="aws_region">
-        <option value="us-east-1">US East (N. Virginia)</option>
-        <option value="us-east-2">US East (Ohio)</option>
-        <option value="us-west-1">US West (N. California)</option>
-        <option value="us-west-2">US West (Oregon)</option>
-        <option value="ap-northeast-2">Asia Pacific (Seoul)</option>
-        <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
-        <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
-        <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
-        <option value="eu-central-1">EU (Frankfurt)</option>
-        <option value="eu-west-1">EU (Ireland)</option>
-        <option value="eu-west-2">EU (London)</option>
-    </select>
-</label>
-<hr>
+<h2 class="text-center">
+    <a href="https://github.com/pyanoveugen/aws_sqs_ui">AWS SQS Console</a>
+</h2>
 
-<div>
-    <button id=get_list>get list of queue</button>
-</div>
+<div class="container" style="padding-top: 10px;">
 
-<hr>
+    <div class="well form-horizontal form-group-sm">
+        <div class="form-group">
+            <label for="aws_access_key_id" class="control-label col-sm-3">aws_access_key_id</label>
+            <div class="col-sm-9">
+                <input class="form-control" id="aws_access_key_id">
+            </div>
+        </div>
 
-<label for="sqs_name">
-    sqs name<input type="text" id=sqs_name>
-</label>
-<label for="sqs_url">
-    sqs url<input type="text" id=sqs_url disabled value="NONE">
-</label>
+        <div class="form-group">
+            <label for="aws_secret_access_key" class="control-label col-sm-3">aws_secret_access_key</label>
+            <div class="col-sm-9">
+                <input class="form-control" id="aws_secret_access_key">
+            </div>
+        </div>
 
-<div>
-    <button id=get_url>get queue url</button>
-</div>
+        <div class="form-group">
+            <label for="aws_region" class="control-label col-sm-3">aws_region</label>
+            <div class="col-sm-9">
+                <select class="form-control" id="aws_region">
+                    <option value="us-east-1">US East (N. Virginia)</option>
+                    <option value="us-east-2">US East (Ohio)</option>
+                    <option value="us-west-1">US West (N. California)</option>
+                    <option value="us-west-2">US West (Oregon)</option>
+                    <option value="ap-northeast-2">Asia Pacific (Seoul)</option>
+                    <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                    <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
+                    <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                    <option value="eu-central-1">EU (Frankfurt)</option>
+                    <option value="eu-west-1">EU (Ireland)</option>
+                    <option value="eu-west-2">EU (London)</option>
+                </select>
+            </div>
+        </div>
 
-<hr>
+        <hr>
 
-<p>Before start using next commands, you need to initialize sqs url by clicking the button "get queue url".</p>
+        <button id=get_list class="btn btn-default">get list of queue</button>
 
-<hr>
+        <hr>
 
-<div>
-    <button id=get_sqs_attr>get SQS attributes</button>
-</div>
+        <div class="form-group">
+            <label for="sqs_name" class="control-label col-sm-3">sqs name</label>
+            <div class="col-sm-9">
+                <input class="form-control" id="sqs_name">
+            </div>
+        </div>
 
-<hr>
+        <div class="form-group">
+            <label for="sqs_url" class="control-label col-sm-3">sqs url</label>
+            <div class="col-sm-9">
+                <input class="form-control" id="sqs_url" disabled value="NONE">
+            </div>
+        </div>
 
-<div>
-    <button id=get_messages>get SQS messages</button>
-    <label for="collect_messages">
-        collect messages <input type="checkbox" checked="checked" id="collect_messages"/>
-    </label>
-    <div>
-        <span>messages collected <span id="msg_size">...</span></span>
-        <button id="btn_msg_clean">clean collected messages</button>
+        <button id=get_url class="btn btn-default">get and set up queue url</button>
+
+        <hr>
+
+        <p>Before start using next commands, you need to initialize sqs url.</p>
+
+        <button id=get_sqs_attr class="btn btn-default">get SQS attributes</button>
+
+        <p></p>
+
+        <div class="row form-group">
+            <div class="col-sm-3">
+                <button id=get_messages class="btn btn-default">get SQS messages</button>
+            </div>
+            <div class="checkbox col-sm-3">
+                <label for="collect_messages">
+                    <input type="checkbox" id="collect_messages"> collect
+                </label>
+            </div>
+            <div class="col-sm-3">
+                <label for="sqs_url" class="control-label ">
+                    collected <span id="msg_size">...</span>
+                </label>
+            </div>
+            <div class="col-sm-3">
+                <button id="btn_msg_clean" class="btn btn-default">clean</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<div id=content style="border-top: 2px solid black">
+
+<div id=content class="container">
     result...
 </div>
 
@@ -176,6 +198,7 @@
             }
                  */
             });
+
             $("#get_sqs_attr").on("click", function () {
                 cleanContent();
 
