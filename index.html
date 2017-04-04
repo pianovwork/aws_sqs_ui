@@ -130,9 +130,11 @@
                 </label>
             </div>
             <div class="col-sm-3">
-                <label for="sqs_url" class="control-label ">
-                    collected <span id="msg_size">...</span>
-                </label>
+                <a href="#" id="show_collected_msg">
+                    <label for="sqs_url" class="control-label ">
+                        collected <span id="msg_size">...</span> (show)
+                    </label>
+                </a>
             </div>
             <div class="col-sm-4">
                 <button id="btn_msg_clean" class="btn btn-default btn-block">Clean up results</button>
@@ -173,16 +175,6 @@
             $("#content").empty();
         }
 
-        function appendResult(err, resp) {
-            if (err) {
-                console.log(err, err.stack); // an error occurred
-                $("#content").append($("<pre>").html(JSON.stringify(err, null, 4)));
-            } else {
-                console.log(resp);           // successful response
-                $("#content").append($("<pre>").html(JSON.stringify(resp, null, 4)));
-            }
-        }
-
         function printResult(err, resp) {
             if (err) {
                 console.log(err, err.stack); // an error occurred
@@ -205,6 +197,26 @@
 
         function updateMessageCount(msg) {
             $("#msg_size").html(msg.length);
+        }
+
+
+        function printMessages(messages) {
+            cleanContent();
+            if (messages.length === 0) {
+                printResult(null, "Messages not found.");
+                return;
+            }
+
+            _.each(messages, function (msg) {
+                $("#content").append(
+                    $("<a name='rm-msg-btn' href='javascript:;'>")
+                        .data("id", msg.MessageId)
+                        .data("handler", msg.ReceiptHandle)
+                        .html("Remove message " + msg.MessageId)
+                );
+                $("#content").append($("<pre>").html(JSON.stringify(msg, null, 4)));
+                $("#content").append($("<hr>"));
+            });
         }
 
         function initBinding() {
@@ -243,6 +255,43 @@
                  */
             });
 
+            $("#show_collected_msg").on("click", function () {
+                printMessages(MESSAGES);
+            });
+
+            function removeMessage(msg) {
+                debugger
+                var sqs = getSQS();
+                var params = {
+                    QueueUrl: localStorage.sqs_url,
+                    ReceiptHandle: msg.ReceiptHandle
+                };
+
+                sqs.deleteMessage(params, function (err, resp) {
+                    if (err) {
+                        console.log(err, err.stack); // an error occurred
+                        $("#content").append($("<pre>").html(JSON.stringify(err, null, 4)));
+                    } else {
+                        console.log(resp);           // successful response
+                        MESSAGES = _.reject(MESSAGES, function (item) {
+                            return item.MessageId === msg.MessageId;
+                        });
+                        updateMessageCount(MESSAGES);
+                        $("#content").append($("<pre>").html("<p>Message id: <b>" + msg.MessageId + "</b> is removed.</p>"));
+                    }
+                });
+            }
+
+            $("#content").on("click", "a[name=rm-msg-btn]", function () {
+                debugger;
+                var msg = {
+                    ReceiptHandle: $(this).data("handler"),
+                    MessageId: $(this).data("id")
+                };
+                cleanContent();
+                removeMessage(msg);
+            });
+
             $("#rm-msg-btn").on("click", function () {
                 cleanContent();
 
@@ -262,26 +311,7 @@
                         return;
                     }
 
-                    _.each(data.Messages, function (msg) {
-                        var params = {
-                            QueueUrl: localStorage.sqs_url,
-                            ReceiptHandle: msg.ReceiptHandle
-                        };
-
-                        sqs.deleteMessage(params, function (err, resp) {
-                            if (err) {
-                                console.log(err, err.stack); // an error occurred
-                                $("#content").append($("<pre>").html(JSON.stringify(err, null, 4)));
-                            } else {
-                                console.log(resp);           // successful response
-                                MESSAGES = _.reject(MESSAGES, function (item) {
-                                    return item.MessageId === msg.MessageId;
-                                });
-                                updateMessageCount(MESSAGES);
-                                $("#content").append($("<pre>").html("<p>Message id: <b>" + msg.MessageId + "</b> is removed.</p>"));
-                            }
-                        });
-                    });
+                    _.each(data.Messages, removeMessage);
                 });
 
 
@@ -329,6 +359,7 @@
             }
                  */
             });
+
             $("#get_messages").on("click", function () {
                 cleanContent();
 
@@ -348,7 +379,12 @@
 
                 sqs.receiveMessage(params, function (err, data) {
                     var msg = [];
-                    if (!err) {
+
+                    if (err) {
+                        console.log(err, err.stack); // an error occurred
+                        $("#content").html($("<pre>").html(JSON.stringify(err, null, 4)));
+                        return
+                    } else {
                         if ($("#collect_messages").is(":checked")) {
                             msg = _.union(MESSAGES, data.Messages);
                             msg = _.uniq(msg, function (a) {
@@ -359,7 +395,8 @@
                             msg = data.Messages;
                         }
                     }
-                    printResult(err, msg);
+
+                    printMessages(msg);
                     updateMessageCount(msg);
                 });
                 /**
