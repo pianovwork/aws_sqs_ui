@@ -23,21 +23,21 @@
 
     <div class="well form-horizontal form-group-sm">
         <div class="form-group">
-            <label for="aws_access_key_id" class="control-label col-sm-3">aws_access_key_id</label>
+            <label for="aws_access_key_id" class="control-label col-sm-3">AWS access key</label>
             <div class="col-sm-9">
                 <input class="form-control" id="aws_access_key_id">
             </div>
         </div>
 
         <div class="form-group">
-            <label for="aws_secret_access_key" class="control-label col-sm-3">aws_secret_access_key</label>
+            <label for="aws_secret_access_key" class="control-label col-sm-3">AWS secret key</label>
             <div class="col-sm-9">
                 <input class="form-control" id="aws_secret_access_key">
             </div>
         </div>
 
         <div class="form-group">
-            <label for="aws_region" class="control-label col-sm-3">aws_region</label>
+            <label for="aws_region" class="control-label col-sm-3">SQS region</label>
             <div class="col-sm-9">
                 <select class="form-control" id="aws_region">
                     <option value="us-east-1">us-east-1 - US East (N. Virginia)</option>
@@ -57,41 +57,76 @@
 
         <hr>
 
-        <button id=get_list class="btn btn-default">get list of queue</button>
-
+        <div class="row">
+            <div class="col-sm-offset-8 col-sm-4">
+                <button id=get_list class="btn btn-default btn-block">Get list of queues</button>
+            </div>
+        </div>
         <hr>
 
+        <h4 class="text-center">Before start using next commands, you need to initialize sqs url.</h4>
+
         <div class="form-group">
-            <label for="sqs_name" class="control-label col-sm-3">sqs name</label>
+            <label for="sqs_name" class="control-label col-sm-3">SQS name</label>
             <div class="col-sm-9">
                 <input class="form-control" id="sqs_name">
             </div>
         </div>
 
         <div class="form-group">
-            <label for="sqs_url" class="control-label col-sm-3">sqs url</label>
+            <label for="sqs_url" class="control-label col-sm-3">SQS url</label>
             <div class="col-sm-9">
                 <input class="form-control" id="sqs_url" disabled value="NONE">
             </div>
         </div>
 
-        <button id=get_url class="btn btn-default">get and set up queue url</button>
+        <hr>
+
+        <div class="row">
+            <div class="col-sm-4">
+                <button id=get_url class="btn btn-default btn-block">Get and set up queue url</button>
+            </div>
+            <div class="col-sm-4">
+                <button id=get_sqs_attr class="btn btn-default btn-block">SQS attributes</button>
+            </div>
+            <div class="col-sm-4">
+                <button id="rm-msg-btn" class="btn btn-default btn-block">Remove messages</button>
+            </div>
+        </div>
 
         <hr>
 
-        <p>Before start using next commands, you need to initialize sqs url.</p>
+        <div class="form-group">
+            <label for="aws_msg" class="control-label col-sm-3">Message body</label>
+            <div class="col-sm-9">
+                <textarea id="aws_msg" rows="3" class="form-control"></textarea>
+            </div>
+        </div>
 
-        <button id=get_sqs_attr class="btn btn-default">get SQS attributes</button>
+        <div class="row">
+            <div class="col-sm-offset-8 col-sm-4">
+                <button id=send_msg_btn class="btn btn-default btn-block">Send message</button>
+            </div>
+        </div>
 
-        <p></p>
+        <hr>
+
+        <div class="form-group">
+            <label for="sqs_name" class="control-label col-sm-3">Message id for removing</label>
+            <div class="col-sm-9">
+                <input class="form-control" id="msg_id_rm" disabled>
+            </div>
+        </div>
+
+        <hr>
 
         <div class="row form-group">
             <div class="col-sm-3">
-                <button id=get_messages class="btn btn-default">get SQS messages</button>
+                <button id=get_messages class="btn btn-default btn-block">SQS messages</button>
             </div>
-            <div class="checkbox col-sm-3">
-                <label for="collect_messages">
-                    <input type="checkbox" id="collect_messages"> collect
+            <div class="checkbox col-sm-2">
+                <label>
+                    <input type="checkbox" id="collect_messages" checked> collect
                 </label>
             </div>
             <div class="col-sm-3">
@@ -99,22 +134,10 @@
                     collected <span id="msg_size">...</span>
                 </label>
             </div>
-            <div class="col-sm-3">
-                <button id="btn_msg_clean" class="btn btn-default">clean</button>
+            <div class="col-sm-4">
+                <button id="btn_msg_clean" class="btn btn-default btn-block">Clean up results</button>
             </div>
         </div>
-
-        <hr>
-
-        <div class="form-group">
-            <label for="aws_msg" class="control-label col-sm-3">aws_message</label>
-            <div class="col-sm-9">
-                <textarea id="aws_msg" rows="5" class="form-control"></textarea>
-            </div>
-        </div>
-
-        <button id=send_msg_btn class="btn btn-default">send message</button>
-
     </div>
 </div>
 
@@ -150,6 +173,16 @@
             $("#content").empty();
         }
 
+        function appendResult(err, resp) {
+            if (err) {
+                console.log(err, err.stack); // an error occurred
+                $("#content").append($("<pre>").html(JSON.stringify(err, null, 4)));
+            } else {
+                console.log(resp);           // successful response
+                $("#content").append($("<pre>").html(JSON.stringify(resp, null, 4)));
+            }
+        }
+
         function printResult(err, resp) {
             if (err) {
                 console.log(err, err.stack); // an error occurred
@@ -176,8 +209,8 @@
 
         function initBinding() {
             $("#btn_msg_clean").on("click", function () {
-                messages = [];
-                updateMessageCount(messages);
+                MESSAGES = [];
+                updateMessageCount(MESSAGES);
                 cleanContent();
             });
 
@@ -210,6 +243,50 @@
                  */
             });
 
+            $("#rm-msg-btn").on("click", function () {
+                cleanContent();
+
+                var sqs = getSQS();
+                var params = {
+                    QueueUrl: localStorage.sqs_url,
+                    MaxNumberOfMessages: 10,
+                    VisibilityTimeout: 10,
+                };
+
+                sqs.receiveMessage(params, function (err, data) {
+                    if (err) {
+                        console.log(err, err.stack); // an error occurred
+                        $("#content").append($("<pre>").html(JSON.stringify(err, null, 4)));
+                    } else if (data.Messages.length === 0) {
+                        printResult(err, "Messages not found.");
+                        return;
+                    }
+
+                    _.each(data.Messages, function (msg) {
+                        var params = {
+                            QueueUrl: localStorage.sqs_url,
+                            ReceiptHandle: msg.ReceiptHandle
+                        };
+
+                        sqs.deleteMessage(params, function (err, resp) {
+                            if (err) {
+                                console.log(err, err.stack); // an error occurred
+                                $("#content").append($("<pre>").html(JSON.stringify(err, null, 4)));
+                            } else {
+                                console.log(resp);           // successful response
+                                MESSAGES = _.reject(MESSAGES, function (item) {
+                                    return item.MessageId === msg.MessageId;
+                                });
+                                updateMessageCount(MESSAGES);
+                                $("#content").append($("<pre>").html("<p>Message id: <b>" + msg.MessageId + "</b> is removed.</p>"));
+                            }
+                        });
+                    });
+                });
+
+
+            });
+
             $("#send_msg_btn").on("click", function () {
                 cleanContent();
 
@@ -217,7 +294,7 @@
                 var params = {
                     MessageBody: $("#aws_msg").val(),
                     QueueUrl: localStorage.sqs_url
-                }
+                };
                 sqs.sendMessage(params, printResult);
             });
 
@@ -257,14 +334,14 @@
 
                 var sqs = getSQS();
                 var params = {
+                    QueueUrl: localStorage.sqs_url,
+                    MaxNumberOfMessages: 10,
                     AttributeNames: [
                         "All"
                     ],
-                    MaxNumberOfMessages: 10,
                     MessageAttributeNames: [
                         "All"
                     ],
-                    QueueUrl: localStorage.sqs_url,
                     VisibilityTimeout: 1,
                     WaitTimeSeconds: 1
                 };
@@ -272,12 +349,12 @@
                 sqs.receiveMessage(params, function (err, data) {
                     var msg = [];
                     if (!err) {
-                        if ($("#collect_messages").prop("checked")) {
-                            msg = _.union(messages, data.Messages);
+                        if ($("#collect_messages").is(":checked")) {
+                            msg = _.union(MESSAGES, data.Messages);
                             msg = _.uniq(msg, function (a) {
                                 return a.MessageId;
                             });
-                            messages = msg;
+                            MESSAGES = msg;
                         } else {
                             msg = data.Messages;
                         }
@@ -319,7 +396,7 @@
 
 //        -----
 
-        var messages = [];
+        var MESSAGES = [];
 
         initBinding();
         setupFormFields();
